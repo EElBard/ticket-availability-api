@@ -5,6 +5,8 @@ const cheerio = require('cheerio')
 const app = express()
 const puppeteer = require('puppeteer')
 
+let browser;
+
 const tracking = [
     {
         name: 'beetlejuice',
@@ -12,23 +14,23 @@ const tracking = [
     }
 ];
 
+// Function to initialize the browser
+async function initializeBrowser() {
+    browser = await puppeteer.launch();
+}
+
 const tickets = [];
 
+// Function to get the final URL using Puppeteer with custom redirection handling
 async function getFinalURL(url) {
-    const browser = await puppeteer.launch();
+    if (!browser) {
+        // Initialize the browser if it's not already initialized
+        await initializeBrowser();
+    }
+
     const page = await browser.newPage();
 
-    // Custom redirection handling
-    page.on('response', async (response) => {
-        if (response.status() === 302 || response.status() === 301) {
-            const redirectURL = response.headers()['location'];
-            if (redirectURL) {
-                await page.goto(redirectURL);
-            }
-        }
-    });
-
-    // Navigate to the URL with Puppeteer
+    // Attempt to navigate to the initial URL with Puppeteer
     await page.goto(url);
 
     // Wait for the page to load (adjust the timeout as needed)
@@ -37,10 +39,9 @@ async function getFinalURL(url) {
     // Get the final URL after redirection
     const finalUrl = page.url();
 
-    await browser.close();
-
     return finalUrl;
 }
+
 
 async function checkAttributeChange() {
     try {
