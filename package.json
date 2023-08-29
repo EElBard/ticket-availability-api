@@ -22,6 +22,7 @@
     "cheerio": "^1.0.0-rc.12",
     "express": "^4.18.2",
     "nodemon": "^2.0.20",
+    "puppeteer": "^21.1.1",
     "tough-cookie": "^4.1.3"
   }
 }

@@ -3,6 +3,7 @@ const express = require('express')
 const axios = require('axios')
 const cheerio = require('cheerio')
 const app = express()
+const puppeteer = require('puppeteer')
 
 const tracking = [
     {
@@ -13,13 +14,42 @@ const tracking = [
 
 const tickets = [];
 
-// Assuming you have already made the necessary imports and set up the tracking array
+async function getFinalURL(url) {
+    const browser = await puppeteer.launch();
+    const page = await browser.newPage();
+
+    // Custom redirection handling
+    page.on('response', async (response) => {
+        if (response.status() === 302 || response.status() === 301) {
+            const redirectURL = response.headers()['location'];
+            if (redirectURL) {
+                await page.goto(redirectURL);
+            }
+        }
+    });
+
+    // Navigate to the URL with Puppeteer
+    await page.goto(url);
+
+    // Wait for the page to load (adjust the timeout as needed)
+    await page.waitForTimeout(5000);
+
+    // Get the final URL after redirection
+    const finalUrl = page.url();
+
+    await browser.close();
+
+    return finalUrl;
+}
 
 async function checkAttributeChange() {
     try {
         const promises = tracking.map(async (show) => {
-            // Make an HTTP GET request to the website
-            const response = await axios.get(show.address);
+            // Get the final URL using Puppeteer
+            const finalURL = await getFinalURL(show.address);
+
+            // Make an HTTP GET request to the final URL
+            const response = await axios.get(finalURL);
 
             // Load the HTML content into cheerio
             const $ = cheerio.load(response.data);
